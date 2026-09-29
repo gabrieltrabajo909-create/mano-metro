@@ -9,6 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
 <style>
 :root{
   --bg:#0B0E13; --panel:rgba(14,18,25,.86); --line:#27303D; --ink:#EEF2F7; --muted:#8E9AAB;
@@ -60,6 +61,7 @@ video,#overlay,#gl{position:absolute;inset:0;width:100%;height:100%;object-fit:c
 .planebar{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .planebar button{flex:none;height:48px;padding:0 14px;border-radius:14px;font-weight:800;font-size:15px;background:var(--panel);border:1px solid var(--line)}
 .planebar button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.credits{font:500 10.5px var(--font);color:var(--muted);text-align:center;line-height:1.3}
 .chip span{color:var(--muted);font-weight:500;margin-left:6px}
 
 /* calibración con foto */
@@ -132,6 +134,7 @@ video,#overlay,#gl{position:absolute;inset:0;width:100%;height:100%;object-fit:c
     <button data-plane="mustang">P-51 Mustang</button>
     <button id="invert" data-i18n="invert"></button>
   </div>
+  <div class="credits" id="credits" hidden></div>
   <div class="hist" id="hist"></div>
   <div class="row" id="measurerow">
     <button class="btn" id="cal" data-i18n="calBtn"></button>
@@ -421,29 +424,56 @@ function drawHand(lm, a, b, good){ drawSkeleton(ctx, lm.map(toScreen), a, b, dev
 
 
 // ---------- pestaña Avión: un avión 3D apoyado sobre la mano ----------
-let app = 'measure', THREE, buildPlane, three = null, planeId = (() => { try { return localStorage.getItem('mano-metro-plane') || 'spitfire'; } catch { return 'spitfire'; } })(), invertUp = false;
+// modelos 3D (Sketchfab) — nariz hacia +Z y arriba +Y después de rotY
+const MODELS = {
+  fw190:    { file: 'models/fw190.glb',    rotY: 0,       credit: 'Fw 190: manilov.ap (CC BY)' },
+  spitfire: { file: 'models/spitfire.glb', rotY: 0,       credit: 'Spitfire Mk Vb: philano (CC BY)' },
+  zero:     { file: 'models/zero.glb',     rotY: Math.PI, credit: 'A6M2 Zero: Ivon852 (CC BY-SA)' },
+  mustang:  { file: 'models/mustang.glb',  rotY: 0,       credit: 'P-51 Mustang: Aaron C. (CC BY-NC)' },
+};
+const modelCache = {};
+let app = 'measure', THREE, buildPlane, GLTFLoader, three = null, planeId = (() => { try { return localStorage.getItem('mano-metro-plane') || 'spitfire'; } catch { return 'spitfire'; } })(), invertUp = false;
 const glc = $('#gl');
 
 async function initThree(){
   if (three) return three;
-  THREE = await import('https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js');
+  THREE = await import('three');
   ({ buildPlane } = await import('./planes.js'));
+  ({ GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js'));
+  const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
   const renderer = new THREE.WebGLRenderer({ canvas: glc, alpha: true, antialias: true });
   const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(0, 1, 0, -1, 1, 6000);
   camera.position.z = 3000;
   scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3f46, 1.7));
   const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(.4, 1, .8); scene.add(sun);
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;   // reflejos realistas
   const holder = new THREE.Group(); scene.add(holder);
   three = { renderer, scene, camera, holder, plane: null, seen: false };
   setPlane(planeId);
   return three;
 }
-function setPlane(id){
+// carga el modelo real, lo centra y lo deja de largo 1; si falla, usa el avión armado con código
+async function loadModel(id){
+  if (modelCache[id]) return modelCache[id];
+  const M = MODELS[id], g = (await new GLTFLoader().loadAsync(M.file)).scene;
+  g.rotation.y = M.rotY;
+  const wrap = new THREE.Group(); wrap.add(g); wrap.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(wrap), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+  g.position.sub(ctr);
+  const norm = new THREE.Group(); norm.add(wrap); norm.scale.setScalar(1 / size.z);
+  return modelCache[id] = norm;
+}
+async function setPlane(id){
   planeId = id; try { localStorage.setItem('mano-metro-plane', id); } catch {}
   document.querySelectorAll('[data-plane]').forEach(b => b.setAttribute('aria-pressed', b.dataset.plane === id));
+  $('#credits').textContent = MODELS[id].credit;
   if (!three) return;
+  let model;
+  try { toast(t('planeLoading')); model = await loadModel(id); $('#toast').hidden = true; }
+  catch { model = buildPlane(THREE, id); }
+  if (planeId !== id) return;              // el usuario ya eligió otro mientras cargaba
   if (three.plane) three.holder.remove(three.plane);
-  three.plane = buildPlane(THREE, id); three.holder.add(three.plane);
+  three.plane = model; three.holder.add(model);
 }
 function sizeGL(){
   const r = glc.getBoundingClientRect(), { renderer, camera } = three;
@@ -484,7 +514,7 @@ function handlePlane(res){
   if (!three.seen) { holder.position.copy(pos); holder.quaternion.copy(q); holder.scale.setScalar(size); three.seen = true; }
   else { holder.position.lerp(pos, .45); holder.quaternion.slerp(q, .35); holder.scale.setScalar(holder.scale.x * .7 + size * .3); }
   holder.visible = true;
-  if (plane) plane.userData.prop.rotation.z += .9;
+  if (plane && plane.userData.prop) plane.userData.prop.rotation.z += .9;
   renderer.render(scene, camera);
 }
 
@@ -493,7 +523,7 @@ async function setApp(a){
   $('#t-measure').setAttribute('aria-pressed', a === 'measure'); $('#t-plane').setAttribute('aria-pressed', a === 'plane');
   const pl = a === 'plane';
   $('#fingerseg').hidden = pl; $('#measurerow').hidden = pl; $('#hist').hidden = pl; $('#value').hidden = pl; $('#alt').hidden = pl;
-  $('#planebar').hidden = !pl; glc.hidden = !pl;
+  $('#planebar').hidden = !pl; $('#credits').hidden = !pl; glc.hidden = !pl;
   collecting = null;
   if (pl) {
     setGuide('', t('planeLoading'));
