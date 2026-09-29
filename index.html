@@ -28,17 +28,23 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mirror{transform:scaleX(-1)}
 
-.top{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;display:flex;gap:8px;align-items:center;justify-content:space-between;background:linear-gradient(#000a,#0000)}
+.top{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;display:flex;flex-direction:column;gap:8px;align-items:center;background:linear-gradient(#000b,#0000)}
+.toprow{width:100%;display:flex;justify-content:space-between;align-items:center}
+.lang{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.lang button{padding:7px 11px;border-radius:999px;font-weight:800;font-size:13px;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
 .seg button{padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .icon{width:42px;height:42px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;flex:none}
 .icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-.readout{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);text-align:center;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
+.readout{position:fixed;left:50%;top:calc(118px + env(safe-area-inset-top,0px));transform:translateX(-50%);text-align:center;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
 .readout .v{font:800 64px/1 var(--font);letter-spacing:-.03em;font-variant-numeric:tabular-nums;text-shadow:0 2px 12px #000}
 .readout .v small{font-size:26px;font-weight:700;margin-left:4px}
-.pill{display:inline-block;margin-top:8px;padding:5px 12px;border-radius:99px;font:700 13px var(--font);background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+.guide{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px}
+.bubble{width:58px;height:58px;flex:none;filter:drop-shadow(0 1px 4px #000)}
+.pill{display:inline-block;max-width:15em;text-align:left;padding:5px 12px;border-radius:99px;font:700 13px var(--font);background:var(--panel);border:1px solid var(--line);color:var(--muted)}
 .pill.ok{color:var(--good);border-color:var(--good)}
 .pill.warn{color:var(--bad);border-color:var(--bad)}
 .alt{font:600 12px var(--mono);color:var(--muted);margin-top:6px;text-shadow:0 1px 6px #000}
@@ -73,7 +79,7 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
 
 .status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 20px;text-align:center;max-width:calc(100% - 40px)}
 .status b{display:block;margin-bottom:4px}
-.toast{position:fixed;left:50%;top:calc(190px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;max-width:calc(100% - 32px);text-align:center;z-index:10}
+.toast{position:fixed;left:50%;top:calc(260px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;max-width:calc(100% - 32px);text-align:center;z-index:10}
 </style>
 </head>
 <body>
@@ -83,24 +89,38 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
 </div>
 
 <header class="top">
-  <div class="seg" role="group" aria-label="Qué dedos medir">
-    <button id="m-index" aria-pressed="true">Pulgar–Índice</button>
-    <button id="m-pinky" aria-pressed="false">Pulgar–Meñique</button>
+  <div class="toprow">
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button id="l-es" aria-pressed="true">ES</button>
+      <button id="l-en" aria-pressed="false">EN</button>
+    </div>
+  <button class="icon" id="flip" data-i18n-aria="flip"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><path d="M9 13a3 3 0 0 0 5.2 2M15 11a3 3 0 0 0-5.2-2"/></svg></button>
   </div>
-  <button class="icon" id="flip" aria-label="Cambiar cámara"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><path d="M9 13a3 3 0 0 0 5.2 2M15 11a3 3 0 0 0-5.2-2"/></svg></button>
+  <div class="seg" role="group">
+    <button id="m-index" aria-pressed="true" data-i18n="modeIndex"></button>
+    <button id="m-pinky" aria-pressed="false" data-i18n="modePinky"></button>
+  </div>
 </header>
 
 <div class="readout" aria-live="polite">
   <div class="v" id="value">—</div>
-  <div class="pill" id="pill">Mostrá tu mano a la cámara</div>
+  <div class="guide">
+    <svg class="bubble" id="bubble" viewBox="-30 -30 60 60" aria-hidden="true">
+      <circle r="28" fill="rgba(14,18,25,.8)" stroke="#27303D" stroke-width="2"/>
+      <circle id="ring" r="11.8" fill="none" stroke="#8E9AAB" stroke-width="2" stroke-dasharray="3 3"/>
+      <line x1="-28" y1="0" x2="28" y2="0" stroke="#27303D"/><line x1="0" y1="-28" x2="0" y2="28" stroke="#27303D"/>
+      <circle id="dot" r="6" fill="#8E9AAB"/>
+    </svg>
+    <div class="pill" id="pill"></div>
+  </div>
   <div class="alt" id="alt"></div>
 </div>
 
 <footer class="bottom">
   <div class="hist" id="hist"></div>
   <div class="row">
-    <button class="btn" id="cal">Calibrar mano</button>
-    <button class="btn main" id="measure" disabled>Medir</button>
+    <button class="btn" id="cal" data-i18n="calBtn"></button>
+    <button class="btn main" id="measure" disabled data-i18n="measure"></button>
   </div>
 </footer>
 
@@ -111,27 +131,22 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
     <p id="calhint"></p>
   </header>
   <div class="steps" id="calsteps">
-    <ol>
-      <li>Poné una <b>hoja A4</b> sobre una mesa.</li>
-      <li>Apoyá la mano <b>abierta y plana</b> sobre la hoja, con los dedos separados y toda la mano adentro de la hoja.</li>
-      <li>Sacá la foto <b>desde arriba</b>, que se vean las <b>4 esquinas</b> de la hoja.</li>
-      <li>Después tocás las 4 esquinas en la foto y listo. Se hace una sola vez.</li>
-    </ol>
+    <ol data-i18n-html="steps"></ol>
   </div>
   <div class="canvaswrap" id="calwrap" hidden><canvas id="calcanvas"></canvas></div>
-  <div class="center" id="calbusy" hidden>Buscando tu mano en la foto…</div>
+  <div class="center" id="calbusy" hidden data-i18n="searching"></div>
   <footer>
     <div class="result" id="calresult" hidden></div>
     <div class="row">
-      <button class="btn" id="calcancel">Cancelar</button>
-      <button class="btn" id="calphoto">Sacar foto</button>
-      <button class="btn main" id="calsave" hidden disabled>Guardar</button>
+      <button class="btn" id="calcancel" data-i18n="cancel"></button>
+      <button class="btn" id="calphoto"></button>
+      <button class="btn main" id="calsave" hidden disabled data-i18n="save"></button>
     </div>
   </footer>
   <input type="file" id="calfile" accept="image/*" capture="environment" hidden>
 </section>
 
-<div class="status" id="status"><b>Cargando…</b><span>Preparando la cámara y el detector de manos</span></div>
+<div class="status" id="status"><b data-i18n="loading"></b><span data-i18n="loadingTxt"></span></div>
 <div class="toast" id="toast" hidden></div>
 
 <script type="module">
@@ -144,6 +159,61 @@ const PALM = [0, 5, 9, 13, 17];                                     // muñeca y
 const PALM_PAIRS = [[0,5],[0,9],[0,17],[5,17],[5,9],[9,13],[13,17]];
 const A4 = [21, 29.7];
 
+// ---------- idiomas ----------
+const T = {
+  es: {
+    modeIndex:'Pulgar–Índice', modePinky:'Pulgar–Meñique', flip:'Cambiar cámara', calBtn:'Calibrar mano', measure:'Medir',
+    loading:'Cargando…', loadingTxt:'Preparando la cámara y el detector de manos', failed:'Algo falló',
+    loadFail:'No se pudo cargar el detector de manos. Revisá la conexión y volvé a abrir la app.',
+    camFail:'La app necesita la cámara. Dale permiso en el navegador y volvé a abrirla.',
+    showHand:'Mostrá tu mano a la cámara', calFirst:'Calibrá tu mano primero',
+    closer:'Acercá la mano a la cámara', farther:'Alejá un poco la mano', center:'Centrá la mano en la pantalla',
+    turn:'Girá la mano ↔ hasta que el punto quede adentro del círculo', tilt:'Inclinala ↕ hasta que el punto quede adentro del círculo',
+    still:'Bien, quedate quieto', ready:'✓ Listo para medir', measuring:'Midiendo… {p}%',
+    measureFail:'No pude medir: mantené la mano de frente y quieta', flat:'plano: {v} cm',
+    calTitle:'Calibrar tu mano', calHas:'Ya tenés una calibración. Hacé otra si querés mejorarla.', calNew:'Se hace <b>una sola vez</b> y sirve para siempre.',
+    steps:'<li>Poné una <b>hoja A4</b> sobre una mesa.</li><li>Apoyá la mano <b>abierta y plana</b> sobre la hoja, con los dedos separados y toda la mano adentro de la hoja.</li><li>Sacá la foto <b>desde arriba</b>, que se vean las <b>4 esquinas</b> de la hoja.</li><li>Después tocás las 4 esquinas en la foto y listo. Se hace una sola vez.</li>',
+    photo:'Sacar foto', otherPhoto:'Otra foto', cancel:'Cancelar', save:'Guardar', searching:'Buscando tu mano en la foto…',
+    openFail:'No pude abrir la foto. Probá con otra.', detFail:'No se pudo cargar el detector.',
+    noHand:'No encontré tu mano en la foto. Probá con más luz y la mano bien abierta.',
+    tapCorners:'Tocá las 4 esquinas de la hoja ({n}/4)', dragHint:'Después podés arrastrarlas para ajustarlas.', review:'Revisá y guardá',
+    palmW:'ancho de palma (nudillos)', handLen:'largo de mano', span:'pulgar–meñique abierto',
+    ruler:'Si querés, medí el ancho de tu palma con una regla para comprobar.', weird:'Las medidas salieron raras: revisá que las esquinas estén bien puestas.',
+    calibrated:'Mano calibrada', idx:'índ', pky:'meñ'
+  },
+  en: {
+    modeIndex:'Thumb–Index', modePinky:'Thumb–Pinky', flip:'Switch camera', calBtn:'Calibrate hand', measure:'Measure',
+    loading:'Loading…', loadingTxt:'Getting the camera and hand detector ready', failed:'Something went wrong',
+    loadFail:'Could not load the hand detector. Check your connection and reopen the app.',
+    camFail:'The app needs the camera. Allow it in your browser and reopen the app.',
+    showHand:'Show your hand to the camera', calFirst:'Calibrate your hand first',
+    closer:'Move your hand closer to the camera', farther:'Move your hand back a bit', center:'Center your hand on the screen',
+    turn:'Turn your hand ↔ until the dot is inside the circle', tilt:'Tilt your hand ↕ until the dot is inside the circle',
+    still:'Good, hold still', ready:'✓ Ready to measure', measuring:'Measuring… {p}%',
+    measureFail:'Could not measure: keep your hand facing the camera and still', flat:'flat: {v} cm',
+    calTitle:'Calibrate your hand', calHas:'You already have a calibration. Do another one to improve it.', calNew:'You do it <b>once</b> and it works from then on.',
+    steps:'<li>Put an <b>A4 sheet</b> on a table.</li><li>Lay your hand <b>open and flat</b> on the sheet, fingers spread, the whole hand inside the sheet.</li><li>Take the photo <b>from above</b> so all <b>4 corners</b> of the sheet are visible.</li><li>Then tap the 4 corners on the photo and you are done. Only once.</li>',
+    photo:'Take photo', otherPhoto:'Retake', cancel:'Cancel', save:'Save', searching:'Looking for your hand in the photo…',
+    openFail:'Could not open the photo. Try another one.', detFail:'Could not load the detector.',
+    noHand:'No hand found in the photo. Try more light and a wide-open hand.',
+    tapCorners:'Tap the 4 corners of the sheet ({n}/4)', dragHint:'You can drag them afterwards to adjust.', review:'Check and save',
+    palmW:'palm width (knuckles)', handLen:'hand length', span:'thumb–pinky spread',
+    ruler:'Optional: check your palm width with a ruler.', weird:'The numbers look off: check the corners are placed right.',
+    calibrated:'Hand calibrated', idx:'idx', pky:'pnk'
+  }
+};
+let lang = (() => { try { const l = localStorage.getItem('mano-metro-lang'); if (l) return l; } catch {} return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en'; })();
+const t = (k, v = {}) => (T[lang][k] || k).replace(/\{(\w+)\}/g, (_, x) => v[x]);
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-html]').forEach(el => el.innerHTML = t(el.dataset.i18nHtml));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  $('#l-es').setAttribute('aria-pressed', lang === 'es'); $('#l-en').setAttribute('aria-pressed', lang === 'en');
+  renderHist();
+}
+function setLang(l){ lang = l; try { localStorage.setItem('mano-metro-lang', l); } catch {} applyLang(); if (!$('#calview').hidden) refreshCalText(); }
+
 // ---------- estado guardado en el teléfono ----------
 // hand = { pts: [[x,y] ×21 en cm, mano plana sobre la hoja], at }
 const LS = 'mano-metro-v1';
@@ -155,6 +225,7 @@ let mode = 'index', facing = 'environment';
 let files, landmarker, imgLandmarker, stream, lastTs = -1, paused = false;
 const recent = [], recent2d = [];
 let collecting = null;
+let tiltS = { x: 0, y: 0, a: 0 };   // inclinación suavizada para la guía
 
 // ---------- geometría ----------
 const d2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -192,7 +263,7 @@ async function start(){
   try {
     files = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
     landmarker = await makeLandmarker('VIDEO');
-  } catch { return fail('No se pudo cargar el detector de manos. Revisá la conexión y volvé a abrir la app.'); }
+  } catch { return fail(t('loadFail')); }
   await openCamera();
   if (!saved.hand) setTimeout(openCal, 400);
 }
@@ -205,13 +276,13 @@ async function makeLandmarker(runningMode){
 async function openCamera(){
   if (stream) stream.getTracks().forEach(t => t.stop());
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); }
-  catch { return fail('La app necesita la cámara. Dale permiso en el navegador y volvé a abrirla.'); }
+  catch { return fail(t('camFail')); }
   video.srcObject = stream; await video.play();
   video.classList.toggle('mirror', facing === 'user'); canvas.classList.toggle('mirror', facing === 'user');
   $('#status').hidden = true;
   requestAnimationFrame(loop);
 }
-function fail(msg){ $('#status').hidden = false; $('#status').innerHTML = `<b>Algo falló</b>${msg}`; }
+function fail(msg){ $('#status').hidden = false; $('#status').innerHTML = `<b>${t('failed')}</b>${msg}`; }
 
 function loop(){
   if (!paused && video.readyState >= 2 && landmarker) {
@@ -237,48 +308,76 @@ function measureFrame(lm, w, b){
   // qué tan de frente está la palma (normal del plano muñeca–índice–meñique contra el eje de la cámara)
   const u = [w[5].x - w[0].x, w[5].y - w[0].y, w[5].z - w[0].z], v = [w[17].x - w[0].x, w[17].y - w[0].y, w[17].z - w[0].z];
   const n = [u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]];
-  const tilt = Math.acos(Math.min(1, Math.abs(n[2]) / Math.hypot(...n))) * 180 / Math.PI;
-  return { cm3d, cm2d, tilt };
+  const len = Math.hypot(...n), s = n[2] > 0 ? -1 : 1;          // que la normal apunte hacia la cámara
+  const nx = s * n[0] / len * (facing === 'user' ? -1 : 1), ny = s * n[1] / len;
+  const tilt = Math.acos(Math.min(1, Math.abs(n[2]) / len)) * 180 / Math.PI;
+  return { cm3d, cm2d, tilt, nx, ny };
+}
+
+const TILT_OK = 25;                       // grados
+const RING = 28 * Math.sin(TILT_OK * Math.PI / 180);
+function setGuide(state, text, nx = 0, ny = 0, show = false){
+  const pill = $('#pill');
+  pill.className = 'pill ' + ({ ok: 'ok', warn: 'warn' }[state] || '');
+  pill.textContent = text;
+  $('#bubble').style.visibility = show ? 'visible' : 'hidden';
+  const dot = $('#dot'), r = Math.min(24, Math.hypot(nx, ny) * 28), ang = Math.atan2(ny, nx);
+  dot.setAttribute('cx', (Math.cos(ang) * r).toFixed(1)); dot.setAttribute('cy', (Math.sin(ang) * r).toFixed(1));
+  const col = state === 'ok' ? '#43C487' : state === 'warn' ? '#EF6F5C' : '#8E9AAB';
+  dot.setAttribute('fill', col); $('#ring').setAttribute('stroke', col);
 }
 
 function handle(res){
   sizeCanvas(); ctx.clearRect(0, 0, canvas.width, canvas.height);
   const lm = res.landmarks && res.landmarks[0], w = res.worldLandmarks && res.worldLandmarks[0];
-  const pill = $('#pill');
   if (!lm || !w) {
     recent.length = recent2d.length = 0;
     $('#value').textContent = '—'; $('#alt').textContent = '';
-    pill.className = 'pill'; pill.textContent = 'Mostrá tu mano a la cámara';
+    setGuide('', t('showHand'));
     $('#measure').disabled = true;
     return;
   }
   const b = TIP[mode];
-  drawHand(lm, TIP.thumb, b);
   if (!saved.hand) {
+    drawHand(lm, TIP.thumb, b, false);
     $('#value').textContent = '—'; $('#alt').textContent = '';
-    pill.className = 'pill warn'; pill.textContent = 'Calibrá tu mano primero';
+    setGuide('warn', t('calFirst'));
     $('#measure').disabled = true;
     return;
   }
-  const m = measureFrame(lm, w, b), front = m.tilt < 30;
+  const m = measureFrame(lm, w, b);
+  tiltS = { x: tiltS.x * .7 + m.nx * .3, y: tiltS.y * .7 + m.ny * .3, a: tiltS.a * .7 + m.tilt * .3 };
+
+  // qué le falta a la posición, en orden de prioridad
+  const xs = lm.map(p => p.x), ys = lm.map(p => p.y);
+  const size = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  let state = 'ok', msg;
+  if (size < .28) { state = 'warn'; msg = t('closer'); }
+  else if (size > .92) { state = 'warn'; msg = t('farther'); }
+  else if (cx < .15 || cx > .85 || cy < .15 || cy > .85) { state = 'warn'; msg = t('center'); }
+  else if (tiltS.a > TILT_OK) { state = 'warn'; msg = Math.abs(tiltS.x) > Math.abs(tiltS.y) ? t('turn') : t('tilt'); }
+  const front = state === 'ok';
   if (front) {
     recent.push(m.cm3d); if (recent.length > 15) recent.shift();
     if (m.cm2d) { recent2d.push(m.cm2d); if (recent2d.length > 15) recent2d.shift(); }
+    const last = recent.slice(-8), mean = last.reduce((s, v) => s + v, 0) / last.length;
+    const sd = Math.sqrt(last.reduce((s, v) => s + (v - mean) ** 2, 0) / last.length);
+    msg = last.length >= 5 && sd > .35 ? t('still') : t('ready');
   }
-  pill.className = 'pill ' + (front ? 'ok' : 'warn');
-  pill.textContent = front ? '✓ Mano de frente' : `Girá la mano de frente (${Math.round(m.tilt)}°)`;
+  drawHand(lm, TIP.thumb, b, front);
   if (recent.length) {
     $('#value').innerHTML = `${median(recent).toFixed(1)}<small>cm</small>`;
-    $('#alt').textContent = recent2d.length ? `plano: ${median(recent2d).toFixed(1)} cm` : '';
+    $('#alt').textContent = recent2d.length ? t('flat', { v: median(recent2d).toFixed(1) }) : '';
   }
   $('#measure').disabled = !!collecting || !recent.length;
 
   if (collecting) {
-    if (front) collecting.samples.push(m.cm3d);
-    pill.textContent = front ? `Midiendo… ${Math.round(collecting.samples.length / collecting.need * 100)}%` : pill.textContent;
+    if (front) { collecting.samples.push(m.cm3d); msg = t('measuring', { p: Math.round(collecting.samples.length / collecting.need * 100) }); }
     if (collecting.samples.length >= collecting.need) { const c = collecting; collecting = null; c.done(median(c.samples)); }
-    else if (performance.now() - collecting.t0 > 6000) { collecting = null; toast('No pude medir: mantené la mano de frente y quieta'); }
+    else if (performance.now() - collecting.t0 > 6000) { collecting = null; toast(t('measureFail')); }
   }
+  setGuide(state, msg, tiltS.x, tiltS.y, true);
 }
 
 function sizeCanvas(){
@@ -292,15 +391,15 @@ function toScreen(p){
   return [p.x * vw * s + ox, p.y * vh * s + oy];
 }
 const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-function drawSkeleton(c, pts, a, b, dpr){
-  c.lineWidth = 2 * dpr; c.strokeStyle = 'rgba(255,255,255,.4)';
+function drawSkeleton(c, pts, a, b, dpr, good){
+  c.lineWidth = (good ? 3 : 2) * dpr; c.strokeStyle = good ? 'rgba(67,196,135,.9)' : 'rgba(255,255,255,.4)';
   c.beginPath(); BONES.forEach(([i, j]) => { c.moveTo(...pts[i]); c.lineTo(...pts[j]); }); c.stroke();
   if (a == null) return;
   c.strokeStyle = '#FFB020'; c.lineWidth = 4 * dpr;
   c.beginPath(); c.moveTo(...pts[a]); c.lineTo(...pts[b]); c.stroke();
   [pts[a], pts[b]].forEach(p => { c.fillStyle = '#FFB020'; c.beginPath(); c.arc(p[0], p[1], 9 * dpr, 0, 7); c.fill(); c.fillStyle = '#1A1204'; c.beginPath(); c.arc(p[0], p[1], 3.5 * dpr, 0, 7); c.fill(); });
 }
-function drawHand(lm, a, b){ drawSkeleton(ctx, lm.map(toScreen), a, b, devicePixelRatio || 1); }
+function drawHand(lm, a, b, good){ drawSkeleton(ctx, lm.map(toScreen), a, b, devicePixelRatio || 1, good); }
 
 // ---------- calibración con hoja A4 ----------
 const cal = { img: null, lm: null, corners: [], drag: -1, view: null, result: null };
@@ -311,9 +410,14 @@ function openCal(){
   Object.assign(cal, { img: null, lm: null, corners: [], result: null });
   $('#calview').hidden = false;
   $('#calsteps').hidden = false; $('#calwrap').hidden = true; $('#calbusy').hidden = true; $('#calresult').hidden = true;
-  $('#calsave').hidden = true; $('#calphoto').hidden = false; $('#calphoto').textContent = 'Sacar foto';
-  $('#caltitle').textContent = 'Calibrar tu mano';
-  $('#calhint').innerHTML = saved.hand ? `Ya tenés una calibración. Hacé otra si querés mejorarla.` : 'Se hace <b>una sola vez</b> y sirve para siempre.';
+  $('#calsave').hidden = true; $('#calphoto').hidden = false;
+  refreshCalText();
+}
+// textos de la calibración según el paso en que está (se repinta al cambiar de idioma)
+function refreshCalText(){
+  $('#calphoto').textContent = cal.img ? t('otherPhoto') : t('photo');
+  if (!cal.img) { $('#caltitle').textContent = t('calTitle'); $('#calhint').innerHTML = saved.hand ? t('calHas') : t('calNew'); return; }
+  computeCal();
 }
 function closeCal(){ $('#calview').hidden = true; paused = false; }
 $('#cal').onclick = openCal;
@@ -324,17 +428,15 @@ $('#calfile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   $('#calsteps').hidden = true; $('#calwrap').hidden = true; $('#calbusy').hidden = false; $('#calresult').hidden = true;
   const img = new Image(); img.src = URL.createObjectURL(f);
-  try { await img.decode(); } catch { $('#calbusy').textContent = 'No pude abrir la foto. Probá con otra.'; return; }
-  try { if (!imgLandmarker) imgLandmarker = await makeLandmarker('IMAGE'); } catch { $('#calbusy').textContent = 'No se pudo cargar el detector.'; return; }
+  try { await img.decode(); } catch { $('#calbusy').textContent = t('openFail'); return; }
+  try { if (!imgLandmarker) imgLandmarker = await makeLandmarker('IMAGE'); } catch { $('#calbusy').textContent = t('detFail'); return; }
   const res = imgLandmarker.detect(img);
   const lm = res.landmarks && res.landmarks[0];
-  $('#calbusy').hidden = true; $('#calbusy').textContent = 'Buscando tu mano en la foto…';
-  if (!lm) { toast('No encontré tu mano en la foto. Probá con más luz y la mano bien abierta.'); openCal(); return; }
+  $('#calbusy').hidden = true; $('#calbusy').textContent = t('searching');
+  if (!lm) { toast(t('noHand')); openCal(); return; }
   Object.assign(cal, { img, lm: lm.map(p => [p.x * img.naturalWidth, p.y * img.naturalHeight]), corners: [], result: null });
-  $('#calwrap').hidden = false; $('#calphoto').textContent = 'Otra foto';
-  $('#caltitle').textContent = 'Tocá las 4 esquinas de la hoja';
-  $('#calhint').textContent = 'Después podés arrastrarlas para ajustarlas.';
-  $('#calsave').hidden = false; $('#calsave').disabled = true;
+  $('#calwrap').hidden = false; $('#calsave').hidden = false; $('#calsave').disabled = true;
+  refreshCalText();
   requestAnimationFrame(drawCal);
 };
 
@@ -386,8 +488,8 @@ addEventListener('resize', () => { if (!$('#calwrap').hidden) drawCal(); });
 function computeCal(){
   const box = $('#calresult');
   if (cal.corners.length < 4) { box.hidden = true; $('#calsave').disabled = true; cal.result = null;
-    $('#caltitle').textContent = `Tocá las 4 esquinas de la hoja (${cal.corners.length}/4)`; return; }
-  $('#caltitle').textContent = 'Revisá y guardá';
+    $('#caltitle').textContent = t('tapCorners', { n: cal.corners.length }); $('#calhint').textContent = t('dragHint'); return; }
+  $('#caltitle').textContent = t('review');
   const c = orderCorners(cal.corners);
   const [w, h] = d2(c[0], c[1]) > d2(c[1], c[2]) ? [A4[1], A4[0]] : A4;   // el lado más largo en la foto es el de 29,7
   const H = homography(c, [[0, 0], [w, 0], [w, h], [0, h]]);
@@ -398,8 +500,8 @@ function computeCal(){
   const sane = palm > 5 && palm < 13 && length > 12 && length < 25;
   cal.result = sane && inside ? pts : null;
   box.hidden = false;
-  box.innerHTML = `<div><b>${palm.toFixed(1)}</b><span>ancho de palma (nudillos)</span></div><div><b>${length.toFixed(1)}</b><span>largo de mano</span></div><div><b>${span.toFixed(1)}</b><span>pulgar–meñique abierto</span></div>`;
-  $('#calhint').textContent = cal.result ? 'Si querés, medí el ancho de tu palma con una regla para comprobar.' : 'Las medidas salieron raras: revisá que las esquinas estén bien puestas.';
+  box.innerHTML = `<div><b>${palm.toFixed(1)}</b><span>${t('palmW')}</span></div><div><b>${length.toFixed(1)}</b><span>${t('handLen')}</span></div><div><b>${span.toFixed(1)}</b><span>${t('span')}</span></div>`;
+  $('#calhint').textContent = cal.result ? t('ruler') : t('weird');
   $('#calsave').disabled = !cal.result;
 }
 
@@ -407,7 +509,7 @@ $('#calsave').onclick = () => {
   if (!cal.result) return;
   saved.hand = { pts: cal.result.map(([x, y]) => [+x.toFixed(3), +y.toFixed(3)]), at: Date.now() };
   save(); recent.length = recent2d.length = 0;
-  closeCal(); toast('Mano calibrada');
+  closeCal(); toast(t('calibrated'));
 };
 
 // ---------- acciones ----------
@@ -431,14 +533,17 @@ $('#measure').onclick = () => {
 };
 
 function renderHist(){
-  const fmt = t => new Date(t).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  $('#hist').innerHTML = saved.history.map(h => `<div class="chip">${h.cm.toFixed(1)} cm<span>${h.mode === 'index' ? 'índ' : 'meñ'} · ${fmt(h.t)}</span></div>`).join('');
+  const fmt = ts => new Date(ts).toLocaleTimeString(lang === 'es' ? 'es-AR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  $('#hist').innerHTML = saved.history.map(h => `<div class="chip">${h.cm.toFixed(1)} cm<span>${h.mode === 'index' ? t('idx') : t('pky')} · ${fmt(h.t)}</span></div>`).join('');
 }
 
 let tt;
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 2800); }
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 2800); }
 
-renderHist();
+$('#l-es').onclick = () => setLang('es');
+$('#l-en').onclick = () => setLang('en');
+applyLang();
+setGuide('', t('showHand'));
 start();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
