@@ -25,7 +25,7 @@ button{background:none;border:0;cursor:pointer;padding:0}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .stage{position:fixed;inset:0;background:#000}
-video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+video,#overlay,#gl{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mirror{transform:scaleX(-1)}
 
 .top{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;display:flex;flex-direction:column;gap:8px;align-items:center;background:linear-gradient(#000b,#0000)}
@@ -57,6 +57,9 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
 .hist{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .hist::-webkit-scrollbar{display:none}
 .chip{flex:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 10px;font:600 13px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.planebar{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.planebar button{flex:none;height:48px;padding:0 14px;border-radius:14px;font-weight:800;font-size:15px;background:var(--panel);border:1px solid var(--line)}
+.planebar button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .chip span{color:var(--muted);font-weight:500;margin-left:6px}
 
 /* calibración con foto */
@@ -86,6 +89,7 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
 <div class="stage">
   <video id="video" playsinline muted></video>
   <canvas id="overlay"></canvas>
+  <canvas id="gl" hidden></canvas>
 </div>
 
 <header class="top">
@@ -94,9 +98,13 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
       <button id="l-es" aria-pressed="true">ES</button>
       <button id="l-en" aria-pressed="false">EN</button>
     </div>
+    <div class="seg" role="tablist">
+      <button id="t-measure" aria-pressed="true" data-i18n="tabMeasure"></button>
+      <button id="t-plane" aria-pressed="false" data-i18n="tabPlane"></button>
+    </div>
   <button class="icon" id="flip" data-i18n-aria="flip"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><path d="M9 13a3 3 0 0 0 5.2 2M15 11a3 3 0 0 0-5.2-2"/></svg></button>
   </div>
-  <div class="seg" role="group">
+  <div class="seg" role="group" id="fingerseg">
     <button id="m-index" aria-pressed="true" data-i18n="modeIndex"></button>
     <button id="m-pinky" aria-pressed="false" data-i18n="modePinky"></button>
   </div>
@@ -117,8 +125,15 @@ video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover
 </div>
 
 <footer class="bottom">
+  <div class="planebar" id="planebar" hidden>
+    <button data-plane="fw190">Fw 190</button>
+    <button data-plane="spitfire">Spitfire</button>
+    <button data-plane="zero">A6M Zero</button>
+    <button data-plane="mustang">P-51 Mustang</button>
+    <button id="invert" data-i18n="invert"></button>
+  </div>
   <div class="hist" id="hist"></div>
-  <div class="row">
+  <div class="row" id="measurerow">
     <button class="btn" id="cal" data-i18n="calBtn"></button>
     <button class="btn main" id="measure" disabled data-i18n="measure"></button>
   </div>
@@ -179,7 +194,8 @@ const T = {
     tapCorners:'Tocá las 4 esquinas de la hoja ({n}/4)', dragHint:'Después podés arrastrarlas para ajustarlas.', review:'Revisá y guardá',
     palmW:'ancho de palma (nudillos)', handLen:'largo de mano', span:'pulgar–meñique abierto',
     ruler:'Si querés, medí el ancho de tu palma con una regla para comprobar.', weird:'Las medidas salieron raras: revisá que las esquinas estén bien puestas.',
-    calibrated:'Mano calibrada', idx:'índ', pky:'meñ'
+    calibrated:'Mano calibrada', idx:'índ', pky:'meñ',
+    tabMeasure:'Medir', tabPlane:'Avión', invert:'↕ Invertir', planeHint:'Mano plana: la cola va en la muñeca, la nariz hacia el dedo mayor', planeLoading:'Cargando aviones…'
   },
   en: {
     modeIndex:'Thumb–Index', modePinky:'Thumb–Pinky', flip:'Switch camera', calBtn:'Calibrate hand', measure:'Measure',
@@ -199,7 +215,8 @@ const T = {
     tapCorners:'Tap the 4 corners of the sheet ({n}/4)', dragHint:'You can drag them afterwards to adjust.', review:'Check and save',
     palmW:'palm width (knuckles)', handLen:'hand length', span:'thumb–pinky spread',
     ruler:'Optional: check your palm width with a ruler.', weird:'The numbers look off: check the corners are placed right.',
-    calibrated:'Hand calibrated', idx:'idx', pky:'pnk'
+    calibrated:'Hand calibrated', idx:'idx', pky:'pnk',
+    tabMeasure:'Measure', tabPlane:'Plane', invert:'↕ Flip', planeHint:'Flat hand: tail at your wrist, nose toward your middle finger', planeLoading:'Loading planes…'
   }
 };
 let lang = (() => { try { const l = localStorage.getItem('mano-metro-lang'); if (l) return l; } catch {} return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en'; })();
@@ -278,7 +295,7 @@ async function openCamera(){
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); }
   catch { return fail(t('camFail')); }
   video.srcObject = stream; await video.play();
-  video.classList.toggle('mirror', facing === 'user'); canvas.classList.toggle('mirror', facing === 'user');
+  video.classList.toggle('mirror', facing === 'user'); canvas.classList.toggle('mirror', facing === 'user'); $('#gl').classList.toggle('mirror', facing === 'user');
   $('#status').hidden = true;
   requestAnimationFrame(loop);
 }
@@ -329,6 +346,7 @@ function setGuide(state, text, nx = 0, ny = 0, show = false){
 
 function handle(res){
   sizeCanvas(); ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (app === 'plane') return handlePlane(res);
   const lm = res.landmarks && res.landmarks[0], w = res.worldLandmarks && res.worldLandmarks[0];
   if (!lm || !w) {
     recent.length = recent2d.length = 0;
@@ -400,6 +418,92 @@ function drawSkeleton(c, pts, a, b, dpr, good){
   [pts[a], pts[b]].forEach(p => { c.fillStyle = '#FFB020'; c.beginPath(); c.arc(p[0], p[1], 9 * dpr, 0, 7); c.fill(); c.fillStyle = '#1A1204'; c.beginPath(); c.arc(p[0], p[1], 3.5 * dpr, 0, 7); c.fill(); });
 }
 function drawHand(lm, a, b, good){ drawSkeleton(ctx, lm.map(toScreen), a, b, devicePixelRatio || 1, good); }
+
+
+// ---------- pestaña Avión: un avión 3D apoyado sobre la mano ----------
+let app = 'measure', THREE, buildPlane, three = null, planeId = (() => { try { return localStorage.getItem('mano-metro-plane') || 'spitfire'; } catch { return 'spitfire'; } })(), invertUp = false;
+const glc = $('#gl');
+
+async function initThree(){
+  if (three) return three;
+  THREE = await import('https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js');
+  ({ buildPlane } = await import('./planes.js'));
+  const renderer = new THREE.WebGLRenderer({ canvas: glc, alpha: true, antialias: true });
+  const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(0, 1, 0, -1, 1, 6000);
+  camera.position.z = 3000;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3f46, 1.7));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(.4, 1, .8); scene.add(sun);
+  const holder = new THREE.Group(); scene.add(holder);
+  three = { renderer, scene, camera, holder, plane: null, seen: false };
+  setPlane(planeId);
+  return three;
+}
+function setPlane(id){
+  planeId = id; try { localStorage.setItem('mano-metro-plane', id); } catch {}
+  document.querySelectorAll('[data-plane]').forEach(b => b.setAttribute('aria-pressed', b.dataset.plane === id));
+  if (!three) return;
+  if (three.plane) three.holder.remove(three.plane);
+  three.plane = buildPlane(THREE, id); three.holder.add(three.plane);
+}
+function sizeGL(){
+  const r = glc.getBoundingClientRect(), { renderer, camera } = three;
+  const W = Math.round(r.width), H = Math.round(r.height);
+  if (camera.right !== W || camera.bottom !== -H) {
+    renderer.setPixelRatio(devicePixelRatio || 1); renderer.setSize(W, H, false);
+    camera.right = W; camera.bottom = -H; camera.updateProjectionMatrix();
+  }
+  return [W, H];
+}
+
+function handlePlane(res){
+  if (!three) return;
+  const [W, H] = sizeGL(), { renderer, scene, camera, holder, plane } = three;
+  const lm = res.landmarks && res.landmarks[0], w = res.worldLandmarks && res.worldLandmarks[0];
+  if (!lm || !w) { holder.visible = false; three.seen = false; renderer.render(scene, camera); setGuide('', t('showHand')); return; }
+  setGuide('ok', t('planeHint'));
+
+  // orientación desde los puntos 3D: cola en la muñeca (0), nariz hacia el nudillo del dedo mayor (9)
+  const V = p => new THREE.Vector3(p.x, -p.y, -p.z);
+  const f = V(w[9]).sub(V(w[0])).normalize();
+  const n = new THREE.Vector3().crossVectors(V(w[5]).sub(V(w[0])), V(w[17]).sub(V(w[0]))).normalize();
+  const hd = (res.handedness || res.handednesses || [[]])[0][0];
+  const label = hd ? hd.categoryName : 'Right';
+  const isRight = facing === 'environment' ? label === 'Right' : label === 'Left';
+  const up = n.multiplyScalar((isRight ? -1 : 1) * (invertUp ? -1 : 1));   // arriba del avión = dorso de la mano
+  up.sub(f.clone().multiplyScalar(up.dot(f))).normalize();
+  const left = new THREE.Vector3().crossVectors(up, f);
+  const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(left, up, f));
+
+  // posición y tamaño en pantalla (píxeles CSS, igual que el video con object-fit: cover)
+  const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh), ox = (W - vw * s) / 2, oy = (H - vh * s) / 2;
+  const sp = i => [lm[i].x * vw * s + ox, lm[i].y * vh * s + oy];
+  const c = [0, 5, 9, 13, 17].map(sp).reduce((a, p) => [a[0] + p[0] / 5, a[1] + p[1] / 5], [0, 0]);
+  const palmLen = Math.hypot(...sp(9).map((v, i) => v - sp(0)[i]));
+  const size = palmLen * 2.4;
+  const pos = new THREE.Vector3(c[0], -c[1], 0);
+  if (!three.seen) { holder.position.copy(pos); holder.quaternion.copy(q); holder.scale.setScalar(size); three.seen = true; }
+  else { holder.position.lerp(pos, .45); holder.quaternion.slerp(q, .35); holder.scale.setScalar(holder.scale.x * .7 + size * .3); }
+  holder.visible = true;
+  if (plane) plane.userData.prop.rotation.z += .9;
+  renderer.render(scene, camera);
+}
+
+async function setApp(a){
+  app = a;
+  $('#t-measure').setAttribute('aria-pressed', a === 'measure'); $('#t-plane').setAttribute('aria-pressed', a === 'plane');
+  const pl = a === 'plane';
+  $('#fingerseg').hidden = pl; $('#measurerow').hidden = pl; $('#hist').hidden = pl; $('#value').hidden = pl; $('#alt').hidden = pl;
+  $('#planebar').hidden = !pl; glc.hidden = !pl;
+  collecting = null;
+  if (pl) {
+    setGuide('', t('planeLoading'));
+    try { await initThree(); setGuide('', t('showHand')); } catch { toast(t('loadFail')); }
+  }
+}
+$('#t-measure').onclick = () => setApp('measure');
+$('#t-plane').onclick = () => setApp('plane');
+document.querySelectorAll('[data-plane]').forEach(b => b.onclick = () => setPlane(b.dataset.plane));
+$('#invert').onclick = () => { invertUp = !invertUp; $('#invert').setAttribute('aria-pressed', invertUp); };
 
 // ---------- calibración con hoja A4 ----------
 const cal = { img: null, lm: null, corners: [], drag: -1, view: null, result: null };
@@ -543,6 +647,7 @@ function toast(msg){ const el = $('#toast'); el.textContent = msg; el.hidden = f
 $('#l-es').onclick = () => setLang('es');
 $('#l-en').onclick = () => setLang('en');
 applyLang();
+setPlane(planeId);
 setGuide('', t('showHand'));
 start();
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
